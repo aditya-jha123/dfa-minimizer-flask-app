@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFA Minimization Visualizer</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="header-container">
+            <h1 style="color: #0000b2 !important;" >DFA Minimization Visualizer</h1>
+            
+        </div>
+    </header>
+
+    <div class="app-container">
+        
+        <div class="panel">
+            <h2>DFA Definition</h2>
+            
+            <label>States (comma separated)</label>
+            <input type="text" id="states" value="q0,q1,q2,q3,q4,q5">
+            
+            <label>Input (comma separated)</label>
+            <input type="text" id="alphabet" value="0,1">
+            
+            <label>Start State</label>
+            <input type="text" id="start" value="q0">
+            
+            <label>Final States (comma separated)</label>
+            <input type="text" id="accept" value="q2,q4">
+            <label>Transitions</label>
+            <div style="margin-bottom: 20px; padding: 15px; background: #e0e7ff; border-radius: 10px; border-left: 5px solid #6366f1;">
+    <p style="margin: 0; color: #3730a3; font-size: 14px;"><strong>Step 1:</strong> Fill out your States and Alphabet above.<br><strong>Step 2:</strong> Click the button below to generate your transition matrix.</p>
+</div>
+
+<button type="button" class="btn-secondary" style="width: 100%; padding: 12px; margin-bottom: 15px; font-size: 15px; background: #ffffff; border: 2px solid #6366f1; color: #6366f1; font-weight: bold; border-radius: 8px;" onclick="generateMatrixTable()">
+    Transition Input
+</button>
+
+<div id="matrix-container" style="overflow-x: auto; margin-bottom: 20px; display: none;">
+    <table class="matrix-table" id="input-matrix">
+        <thead id="matrix-head"></thead>
+        <tbody id="matrix-body"></tbody>
+    </table>
+</div>
+<button type="button" class="btn-secondary" style="margin-top: 5px; width: 100%; border: 1px dashed #94a3b8; background: transparent; color: #475569;" onclick="addTransitionRow()">+ Add New Transition</button>
+
+
+            <div class="btn-group">
+                <button class="btn-primary" id="btn-init" onclick="initialize()">Initialize</button>
+                <button class="btn-secondary" id="btn-next" onclick="nextStep()" disabled>Next Step</button>
+            </div>
+        </div>
+
+        <div class="panel" id="visualization">
+            <h3>Minimization Process</h3>
+            <div id="partition-log"></div>
+            <h3>Minimized DFA Graph</h3>
+            <div id="network-graph"></div>
+            <div id="minimized-table-container" style="margin-top: 20px;"></div>
+        </div>
+        
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
