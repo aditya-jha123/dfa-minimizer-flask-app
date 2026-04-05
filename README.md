@@ -39,33 +39,24 @@ Make sure you have [Python 3.x](https://www.python.org/downloads/) installed on 
    ```bash
    git clone [https://github.com/aditya-jha123/dfa-minimization-visualizer.git](https://github.com/aditya-jha123/dfa-minimization-visualizer.git)
    cd dfa-minimization-visualizer
-Set up a virtual environment (Optional but recommended):
+2. **Set up a virtual environment (Optional but recommended):**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   pip install Flask
+   python app.py
+   Navigate to http://127.0.0.1:5000 to use the visualizer!
+📖 ##**How to Use**
+1) Define the DFA: Enter your States (e.g., q0, q1, q2), Alphabet (e.g., 0, 1), Start State (e.g., q0), and Accept States (e.g., q2).
 
-Bash
-python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-Install the required dependencies:
+2) Generate Matrix: Click the "Generate Transition Matrix Grid" button.
 
-Bash
-pip install Flask
-Run the application:
+3) Fill the Grid: Enter the destination state for each transition in the newly generated table. Leave a box empty or type - if there is no transition (dead state).
 
-Bash
-python app.py
-Open in your browser:
-Navigate to http://127.0.0.1:5000 to use the visualizer!
+4) Minimize: Click "Minimize DFA" to view the step-by-step partitioning logic, the final mathematical table, and the interactive network graph
 
-📖 How to Use
-Define the DFA: Enter your States (e.g., q0, q1, q2), Alphabet (e.g., 0, 1), Start State (e.g., q0), and Accept States (e.g., q2).
-
-Generate Matrix: Click the "Generate Transition Matrix Grid" button.
-
-Fill the Grid: Enter the destination state for each transition in the newly generated table. Leave a box empty or type - if there is no transition (dead state).
-
-Minimize: Click "Minimize DFA" to view the step-by-step partitioning logic, the final mathematical table, and the interactive network graph!
-
-🤝 Contributing
+🤝 __Contributing__
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page if you want to contribute.
 
-📝 License
+📝 **License**
 This project is licensed under the MIT License - see the LICENSE file for details.
