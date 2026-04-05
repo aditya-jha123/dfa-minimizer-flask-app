@@ -4,7 +4,9 @@ this is a web tool which helps to minimize dfa by showing step by step process u
 
 A sleek, interactive web application that visualizes the step-by-step process of minimizing a Deterministic Finite Automaton (DFA). Built with a modern **Dark Glassmorphism** UI, this tool is designed for computer science students, educators, and automaton enthusiasts to easily understand and compute DFA minimization.
 
-![DFA Visualizer Screenshot](link-to-your-screenshot-here.png) *(Note: Replace with a screenshot of your app)*
+![DFA Visualizer Screenshot]
+<img width="1567" height="890" alt="dfa-minimizer-tool" src="https://github.com/user-attachments/assets/3d932111-7c60-4bd1-8d6c-7d3938a89545" />
+
 
 ## ✨ Features
 
@@ -35,5 +37,35 @@ Make sure you have [Python 3.x](https://www.python.org/downloads/) installed on 
 ### Installation Steps
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/dfa-minimization-visualizer.git](https://github.com/yourusername/dfa-minimization-visualizer.git)
+   git clone [https://github.com/aditya-jha123/dfa-minimization-visualizer.git](https://github.com/aditya-jha123/dfa-minimization-visualizer.git)
    cd dfa-minimization-visualizer
+Set up a virtual environment (Optional but recommended):
+
+Bash
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+Install the required dependencies:
+
+Bash
+pip install Flask
+Run the application:
+
+Bash
+python app.py
+Open in your browser:
+Navigate to http://127.0.0.1:5000 to use the visualizer!
+
+📖 How to Use
+Define the DFA: Enter your States (e.g., q0, q1, q2), Alphabet (e.g., 0, 1), Start State (e.g., q0), and Accept States (e.g., q2).
+
+Generate Matrix: Click the "Generate Transition Matrix Grid" button.
+
+Fill the Grid: Enter the destination state for each transition in the newly generated table. Leave a box empty or type - if there is no transition (dead state).
+
+Minimize: Click "Minimize DFA" to view the step-by-step partitioning logic, the final mathematical table, and the interactive network graph!
+
+🤝 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page if you want to contribute.
+
+📝 License
+This project is licensed under the MIT License - see the LICENSE file for details.
