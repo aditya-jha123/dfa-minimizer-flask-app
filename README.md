@@ -53,9 +53,11 @@ This project recently underwent a major update to its parsing engine and visual 
    git clone [https://github.com/aditya-jha123/dfa-minimizer.git](https://github.com/yourusername/dfa-minimizer.git)
    cd dfa-minimizer
    python -m venv venv
-source venv\Scripts\activate 
-pip install flask
-python app.py
+   source venv\Scripts\activate 
+   pip install flask
+   python app.py
+
+
 📖 **How to Use**
 Select an Input Mode: Choose between Manual, Regex, or Draw from the left-hand panel.
 
@@ -66,6 +68,8 @@ Initialize: Click the Initialize button to parse the data and remove unreachable
 Step-by-Step: Click Next Step to step through Hopcroft's table-filling/partitioning algorithm sequentially, or click Run All to skip to the end.
 
 Analyze: Interact with the generated network graph (zoom/drag) and review the logic in the Live Algorithm Walkthrough panel.
+
+
 
 📝 **License**
 This project is open-source and available under the MIT License.
