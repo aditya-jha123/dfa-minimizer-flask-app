@@ -1,62 +1,71 @@
-# dfa-minimizer-flask-app
-this is a web tool which helps to minimize dfa by showing step by step process using partition method and generating a minimized graph and transition table at the end
-# 🕸️ DFA Minimization Visualizer
+# DFA Minimizer & Visualizer
 
-A sleek, interactive web application that visualizes the step-by-step process of minimizing a Deterministic Finite Automaton (DFA). Built with a modern **Dark Glassmorphism** UI, this tool is designed for computer science students, educators, and automaton enthusiasts to easily understand and compute DFA minimization.
+A web-based educational tool and visualization engine that minimizes Deterministic Finite Automata (DFA) using **Hopcroft's Algorithm**. 
 
-![DFA Visualizer Screenshot]
-<img width="1567" height="890" alt="dfa-minimizer-tool" src="https://github.com/user-attachments/assets/3d932111-7c60-4bd1-8d6c-7d3938a89545" />
+This application takes in raw DFA inputs or Regular Expressions, determinizes them, and provides a beautiful, interactive, step-by-step breakdown of the state-partitioning minimization process.
 
+![DFA Minimizer](https://img.shields.io/badge/Status-Active-success) ![UI](https://img.shields.io/badge/UI-Dark_Editorial-0e1420) ![Algorithm](https://img.shields.io/badge/Algorithm-Hopcroft's-a78bfa)
 
-## ✨ Features
+## ✨ Core Features
 
-* **Modern Glassmorphism UI:** A beautiful dark mode interface with frosted glass panels, vibrant gradient backgrounds, and fully responsive design.
-* **Dynamic Transition Matrix:** Say goodbye to clunky text inputs! Input your states and alphabet to automatically generate a clean, paper-style δ (delta) transition matrix grid.
-* **Step-by-Step Visualization:** Watch the Myhill-Nerode partitioning process unfold step-by-step as equivalent states are grouped and split.
-* **Interactive Graph Rendering:** Powered by `Vis.js`, the minimized DFA is plotted as an interactive, draggable network graph.
-* **Automated Textbook-Style Tables:** Generates a final minimized transition table complete with visual badges for Start and Accept states.
+The application supports three distinct input modes to generate the initial automaton:
 
-## 🧠 Algorithms Under the Hood
+1. **Manual Matrix Entry:** Define states, alphabet, and target transitions via a dynamically generated HTML table.
+2. **Regex Engine:** Enter a regular expression. The app tokenizes it, builds a Thompson NFA, and converts it to a DFA using subset construction.
+3. **Interactive Canvas:** Draw states and connect them with arrows by hand on a digital whiteboard.
 
-This visualizer perfectly minimizes any valid DFA by running two distinct algorithms side-by-side:
+Once the automaton is provided, the tool minimizes it and outputs:
+* **Live Algorithm Walkthrough:** A dynamic log that explains *why* specific states are split during the partitioning process.
+* **Network Graph:** An interactive, physics-based network visualization of the final minimized DFA.
+* **Minimized Transition Table:** A clean, easy-to-read transition matrix of the optimized states.
 
-1. **Breadth-First Search (BFS) for Reachability:** Before minimization begins, a BFS sweep starting from the Start State identifies and permanently eliminates any unreachable "dead/floating" states from the graph.
-2. **Moore’s Algorithm (Partition Method):** Based on the Myhill-Nerode Theorem, this algorithm groups states into initial partitions (Accept vs. Non-Accept) and iteratively checks their transition signatures, splitting them until only truly equivalent states remain grouped together.
+---
+
+## 🚀 v2.0 Extension Updates
+
+This project recently underwent a major update to its parsing engine and visual layout:
+
+### Advanced Regex Pre-Processing
+* **Exponent Support (`^n`):** Added algebraic-style repeat operators. Expressions like `a^3` automatically expand to `aaa`, and `(ab)^2` to `(ab)(ab)`, prior to tokenization.
+* **Interactive Regex Toolbar:** Replaced plain text hints with a clickable GUI toolbar that cleanly injects concatenation (`·`), union (`|`), Kleene stars (`*`), optional operators (`?`), and brackets directly into the cursor position.
+
+### Network Graph Layout & Physics Overhaul
+* **Algorithmic Layout Shift:** Migrated the `vis-network` engine from a rigid hierarchical layout to a physics-based `barnesHut` model, allowing the graph to breathe and adapt to complex state machines.
+* **Curved & Bidirectional Routing:** Implemented `curvedCW` edges to ensure transitions like `A → B` and `B → A` render as distinct ovals, eliminating overlapping lines.
+* **Self-Loop Rendering:** Adjusted z-indices and sizing to prevent self-referential inputs (e.g., `q0` looping on `b`) from hiding behind solid node backgrounds.
+* **Custom SVG Nodes:** Upgraded visual distinctiveness by attaching transition arrows to the outer radii of custom SVG shapes (e.g., double-rings for Accept states).
+
+---
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** HTML5, CSS3 (Custom Glassmorphism theme), Vanilla JavaScript
-* **Graphing Library:** [Vis.js Network](https://visjs.github.io/vis-network/)
-* **Backend:** Python & Flask *(Assuming standard Flask setup based on `/templates` and `/static` structure)*
+* **Backend:** Python, Flask
+* **Frontend:** HTML5, CSS3 (Custom Dark Editorial Theme), Vanilla JavaScript
+* **Graphing Library:** [vis-network](https://visjs.github.io/vis-network/docs/network/)
+* **Font Typography:** *Syne* (Display), *Fira Code* (Monospace)
 
-## 🚀 How to Run Locally
+---
 
-### Prerequisites
-Make sure you have [Python 3.x](https://www.python.org/downloads/) installed on your machine.
+## 💻 Installation & Setup
 
-### Installation Steps
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/aditya-jha123/dfa-minimization-visualizer.git](https://github.com/aditya-jha123/dfa-minimization-visualizer.git)
-   cd dfa-minimization-visualizer
-2. **Set up a virtual environment (Optional but recommended):**
-   ```bash
+   git clone [https://github.com/aditya-jha123/dfa-minimizer.git](https://github.com/yourusername/dfa-minimizer.git)
+   cd dfa-minimizer
    python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   pip install Flask
-   python app.py
-   Navigate to http://127.0.0.1:5000 to use the visualizer!
-📖 ##**How to Use**
-1) Define the DFA: Enter your States (e.g., q0, q1, q2), Alphabet (e.g., 0, 1), Start State (e.g., q0), and Accept States (e.g., q2).
+source venv\Scripts\activate 
+pip install flask
+python app.py
+📖 **How to Use**
+Select an Input Mode: Choose between Manual, Regex, or Draw from the left-hand panel.
 
-2) Generate Matrix: Click the "Generate Transition Matrix Grid" button.
+Provide Automaton Data: Fill in the transition table, type a regular expression, or draw your states.
 
-3) Fill the Grid: Enter the destination state for each transition in the newly generated table. Leave a box empty or type - if there is no transition (dead state).
+Initialize: Click the Initialize button to parse the data and remove unreachable states.
 
-4) Minimize: Click "Minimize DFA" to view the step-by-step partitioning logic, the final mathematical table, and the interactive network graph
+Step-by-Step: Click Next Step to step through Hopcroft's table-filling/partitioning algorithm sequentially, or click Run All to skip to the end.
 
-🤝 __Contributing__
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page if you want to contribute.
+Analyze: Interact with the generated network graph (zoom/drag) and review the logic in the Live Algorithm Walkthrough panel.
 
 📝 **License**
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is open-source and available under the MIT License.
