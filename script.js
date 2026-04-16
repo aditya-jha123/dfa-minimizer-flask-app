@@ -14,9 +14,20 @@ let partitions = [];
 let stepCount  = 0;
 let isDone     = false;
 
-// ──────────────────────────────────────────────
-// PAGE LOAD
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════
+// 0.  REGEX NOTEBOOK FORMATTER & UI LOGIC
+// ══════════════════════════════════════════════
+// Expanded map to support numbers and letters as exponents
+const exponentMap = { 
+    '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', 
+    '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', 
+    'n': 'ⁿ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+    'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+    'k': 'ᵏ', 'm': 'ᵐ', 't': 'ᵗ'
+};
+const reverseExponentMap = {};
+for (const key in exponentMap) { reverseExponentMap[exponentMap[key]] = key; }
+
 document.addEventListener('DOMContentLoaded', () => {
     generateMatrixTable();
 
@@ -29,7 +40,74 @@ document.addEventListener('DOMContentLoaded', () => {
     alphabetInput.addEventListener('input', update);
 
     initCanvas();
+
+    // REGEX AUTO-FORMATTER
+    const regexInput = document.getElementById('regex-input');
+    if (regexInput) {
+        // FIX: Change font to Syne/Arial so the Kleene Star (*) renders at the top of the line 
+        // instead of being vertically centered by the Fira Code programming font.
+        regexInput.style.fontFamily = "'Syne', Arial, sans-serif";
+        regexInput.style.fontSize = "1.2rem";
+
+        regexInput.addEventListener('input', function(e) {
+            let val = this.value;
+            
+            // Auto-replace standard + with superscript ⁺
+            val = val.replace(/\+/g, '⁺');
+            
+            // Auto-replace ^ followed by a number or letter into a superscript (e.g., ^3 -> ³)
+            val = val.replace(/\^([0-9a-z])/gi, (match, p1) => {
+                return exponentMap[p1.toLowerCase()] || match;
+            });
+            
+            // Update value and fix cursor position seamlessly
+            if (this.value !== val) {
+                let start = this.selectionStart;
+                this.value = val;
+                this.setSelectionRange(start - 1, start - 1); 
+            }
+        });
+    }
 });
+
+// Toolbar Button Logic
+function insertRegex(char) {
+    const input = document.getElementById('regex-input');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    let text = input.value;
+    
+    let insertChar = char;
+    // Visually swap + closure to superscript
+    if (char === '+') insertChar = '⁺';
+    
+    // If user clicks the ^ button, just insert the ^. 
+    // They will type a number next, and the input listener above will turn it into a superscript!
+    if (char === '^') insertChar = '^'; 
+    
+    if (char === '()') {
+        input.value = text.slice(0, start) + '()' + text.slice(end);
+        input.setSelectionRange(start + 1, start + 1);
+    } else {
+        input.value = text.slice(0, start) + insertChar + text.slice(end);
+        input.setSelectionRange(start + insertChar.length, start + insertChar.length);
+    }
+    input.focus();
+}
+
+// Translates visual notebook format back into the standard regex engine format
+function getEngineRegex() {
+    let val = document.getElementById('regex-input').value;
+    
+    // Put + closure back to normal
+    val = val.replace(/⁺/g, '+');
+    
+    // Put exponents (³, ⁿ) back to standard syntax (^3, ^n)
+    for (const sup in reverseExponentMap) {
+        val = val.split(sup).join('^' + reverseExponentMap[sup]);
+    }
+    return val;
+}
 
 // ══════════════════════════════════════════════
 // 1.  TAB SWITCHING
@@ -69,7 +147,6 @@ function generateMatrixTable() {
 // 3.  REGEX → NFA → DFA   (Thompson + Subset)
 // ══════════════════════════════════════════════
 
-/* ── 3. PRE-PROCESSING: Exponents (e.g., a^3 -> aaa) ── */
 function expandExponents(regexStr) {
     let res = regexStr;
     let i = 0;
@@ -86,7 +163,6 @@ function expandExponents(regexStr) {
                 let subject = "";
                 let startIdx = 0;
                 
-                // If preceded by a group, trace back to find the matching '('
                 if (res[i-1] === ')') {
                     let parens = 1;
                     let k = i - 2;
@@ -98,17 +174,16 @@ function expandExponents(regexStr) {
                     startIdx = k + 1;
                     subject = res.substring(startIdx, i);
                 } else {
-                    // Otherwise, just grab the preceding character
                     startIdx = i - 1;
                     subject = res.substring(startIdx, i);
                 }
                 
                 let expanded = "";
                 for(let c = 0; c < count; c++) expanded += subject;
-                if (count === 0) expanded = "ε"; // Fallback for ^0
+                if (count === 0) expanded = "ε";
 
                 res = res.substring(0, startIdx) + expanded + res.substring(j);
-                i = startIdx + expanded.length; // Move cursor past the expanded text
+                i = startIdx + expanded.length;
                 continue;
             }
         }
@@ -117,10 +192,7 @@ function expandExponents(regexStr) {
     return res;
 }
 
-
-/* ── 3a. Tokeniser ── */
 function tokenise(re) {
-    // Insert explicit concatenation operator '·' where needed
     const out = [];
     for (let i = 0; i < re.length; i++) {
         const c = re[i];
@@ -136,7 +208,6 @@ function tokenise(re) {
     return out;
 }
 
-/* ── 3b. Shunting-yard → postfix ── */
 function toPostfix(tokens) {
     const prec = { '|': 1, '·': 2, '*': 3, '+': 3, '?': 3 };
     const assoc = { '|': 'L', '·': 'L', '*': 'R', '+': 'R', '?': 'R' };
@@ -162,22 +233,18 @@ function toPostfix(tokens) {
     return out;
 }
 
-/* ── 3c. Thompson NFA ── */
 let _nfaId = 0;
 function newState() { return 's' + (_nfaId++); }
 
 function buildNFA(postfix) {
     _nfaId = 0;
     const stack = [];
-
     const makeEdge = (from, sym, to) => ({ from, sym, to });
 
     for (const tok of postfix) {
         if (tok === '·') {
             const b = stack.pop(), a = stack.pop();
-            // merge a.end → b.start via ε
-            const transitions = [...a.transitions, ...b.transitions,
-                                  makeEdge(a.end, 'ε', b.start)];
+            const transitions = [...a.transitions, ...b.transitions, makeEdge(a.end, 'ε', b.start)];
             stack.push({ start: a.start, end: b.end, transitions });
         } else if (tok === '|') {
             const b = stack.pop(), a = stack.pop();
@@ -215,7 +282,6 @@ function buildNFA(postfix) {
             ];
             stack.push({ start: s, end: e, transitions });
         } else {
-            // literal symbol
             const s = newState(), e = newState();
             stack.push({ start: s, end: e, transitions: [makeEdge(s, tok, e)] });
         }
@@ -223,7 +289,6 @@ function buildNFA(postfix) {
     return stack[0];
 }
 
-/* ── 3d. ε-closure ── */
 function epsClosure(states, edges) {
     const closure = new Set(states);
     const queue   = [...states];
@@ -239,7 +304,6 @@ function epsClosure(states, edges) {
     return [...closure].sort();
 }
 
-/* ── 3e. Subset construction (NFA → DFA) ── */
 function nfaToDFA(nfa, alphabet) {
     const edges   = nfa.transitions;
     const start   = epsClosure([nfa.start], edges);
@@ -255,7 +319,6 @@ function nfaToDFA(nfa, alphabet) {
         const ck  = stateKey(cur);
         dfaTrans[ck] = {};
         for (const sym of alphabet) {
-            // move
             const moved = [];
             for (const nfaState of cur) {
                 for (const e of edges) {
@@ -274,15 +337,12 @@ function nfaToDFA(nfa, alphabet) {
         }
     }
 
-    // rename to q0, q1, ...
     const idx   = {};
     dfaStates.forEach((st, i) => { idx[stateKey(st)] = 'q' + i; });
 
     const states  = dfaStates.map((_, i) => 'q' + i);
     const startSt = idx[stateKey(start)];
-    const accept  = dfaStates
-        .filter(st => st.includes(nfa.end))
-        .map(st => idx[stateKey(st)]);
+    const accept  = dfaStates.filter(st => st.includes(nfa.end)).map(st => idx[stateKey(st)]);
 
     const transitions = {};
     for (const [ck, symMap] of Object.entries(dfaTrans)) {
@@ -296,9 +356,9 @@ function nfaToDFA(nfa, alphabet) {
     return { states, alphabet, start: startSt, accept, transitions };
 }
 
-/* ── 3f. Public: convert regex then populate manual fields ── */
 function convertRegexToDFA() {
-    let re   = document.getElementById('regex-input').value.trim();
+    // We use getEngineRegex() to convert visually formatted text back to raw regex for the algorithm
+    let re = getEngineRegex().trim(); 
     const alph = document.getElementById('regex-alphabet').value.split(',').map(s => s.trim()).filter(Boolean);
     const status = document.getElementById('regex-status');
 
@@ -306,13 +366,12 @@ function convertRegexToDFA() {
     if (!alph.length) { showStatus(status, 'err', 'Please enter the alphabet.'); return; }
 
     try {
-        re = expandExponents(re); // Process exponents like ^3
+        re = expandExponents(re); 
         const tokens  = tokenise(re);
         const postfix = toPostfix(tokens);
         const nfa     = buildNFA(postfix);
         const result  = nfaToDFA(nfa, alph);
 
-        // Populate manual fields
         document.getElementById('states').value  = result.states.join(',');
         document.getElementById('alphabet').value = result.alphabet.join(',');
         document.getElementById('start').value   = result.start;
@@ -320,7 +379,6 @@ function convertRegexToDFA() {
 
         generateMatrixTable();
 
-        // Fill matrix
         setTimeout(() => {
             document.querySelectorAll('#matrix-body input').forEach(inp => {
                 const from = inp.getAttribute('data-from');
@@ -332,7 +390,6 @@ function convertRegexToDFA() {
         const msg = `✓ Converted! ${result.states.length} states, ${result.accept.length} accept state(s).`;
         showStatus(status, 'ok', msg);
 
-        // Switch to manual tab so user sees the filled matrix
         setTimeout(() => switchTab('manual'), 800);
 
     } catch (e) {
@@ -350,8 +407,8 @@ function showStatus(el, cls, msg) {
 // 4.  CANVAS — HAND-DRAWN DFA INPUT
 // ══════════════════════════════════════════════
 const C = {
-    states:       [],   // { id, x, y, accept, label }
-    arrows:       [],   // { from, to, label }
+    states:       [],   
+    arrows:       [],   
     tool:         'state',
     dragging:     null,
     arrowFrom:    null,
@@ -403,10 +460,7 @@ function canvasPos(e) {
     return { x: (e.clientX || e.pageX) - r.left, y: (e.clientY || e.pageY) - r.top };
 }
 
-function hitState(x, y) {
-    return C.states.find(s => Math.hypot(s.x - x, s.y - y) <= 24);
-}
-
+function hitState(x, y) { return C.states.find(s => Math.hypot(s.x - x, s.y - y) <= 24); }
 function hitArrow(x, y) {
     return C.arrows.find(a => {
         const from = C.states.find(s => s.id === a.from);
@@ -424,7 +478,6 @@ function canvasDown(e) {
     if (C.tool === 'state') {
         const hit = hitState(x, y);
         if (hit) { C.dragging = hit; return; }
-        // Add new state
         const label = 'q' + C.nextId++;
         C.states.push({ id: C.nextId, x, y, accept: false, label });
         drawCanvas();
@@ -434,16 +487,9 @@ function canvasDown(e) {
     if (C.tool === 'arrow') {
         const hit = hitState(x, y);
         if (hit) {
-            if (!C.arrowFrom) {
-                C.arrowFrom = hit;
-            } else {
-                // complete arrow
-                openArrowModal(C.arrowFrom.id, hit.id);
-                C.arrowFrom = null;
-            }
-        } else {
-            C.arrowFrom = null;
-        }
+            if (!C.arrowFrom) C.arrowFrom = hit;
+            else { openArrowModal(C.arrowFrom.id, hit.id); C.arrowFrom = null; }
+        } else C.arrowFrom = null;
         drawCanvas();
         return;
     }
@@ -451,15 +497,12 @@ function canvasDown(e) {
     if (C.tool === 'erase') {
         const hitS = hitState(x, y);
         if (hitS) {
-            C.states   = C.states.filter(s => s.id !== hitS.id);
-            C.arrows   = C.arrows.filter(a => a.from !== hitS.id && a.to !== hitS.id);
+            C.states = C.states.filter(s => s.id !== hitS.id);
+            C.arrows = C.arrows.filter(a => a.from !== hitS.id && a.to !== hitS.id);
             drawCanvas(); return;
         }
         const hitA = hitArrow(x, y);
-        if (hitA) {
-            C.arrows = C.arrows.filter(a => a !== hitA);
-            drawCanvas();
-        }
+        if (hitA) { C.arrows = C.arrows.filter(a => a !== hitA); drawCanvas(); }
     }
 }
 
@@ -470,19 +513,14 @@ function canvasMove(e) {
     drawCanvas();
 }
 
-function canvasUp(e) {
-    C.dragging = null;
-}
-
+function canvasUp(e) { C.dragging = null; }
 function canvasDbl(e) {
     const { x, y } = canvasPos(e);
     const hit = hitState(x, y);
     if (hit) { hit.accept = !hit.accept; drawCanvas(); }
 }
 
-// ── Arrow label modal ──
 let _arrowModalResolve = null;
-
 function openArrowModal(fromId, toId) {
     C.pendingArrow = { from: fromId, to: toId };
     document.getElementById('arrow-label-input').value = '';
@@ -501,155 +539,97 @@ function closeArrowModal(confirm) {
 }
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && document.getElementById('arrow-modal').classList.contains('open')) {
-        closeArrowModal(true);
-    }
+    if (e.key === 'Enter' && document.getElementById('arrow-modal').classList.contains('open')) closeArrowModal(true);
     if (e.key === 'Escape') closeArrowModal(false);
 });
 
-// ── Draw ──
 function drawCanvas() {
     if (!C.ctx) return;
     const ctx = C.ctx, W = C.canvas.width, H = C.canvas.height;
     ctx.clearRect(0, 0, W, H);
-
-    // arrows
     C.arrows.forEach(a => drawArrow(ctx, a));
 
-    // live arrow preview
     if (C.arrowFrom && C.tool === 'arrow') {
         ctx.save();
-        ctx.setLineDash([5, 4]);
-        ctx.strokeStyle = 'rgba(0,255,200,0.4)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(C.arrowFrom.x, C.arrowFrom.y);
-        ctx.lineTo(C.mouseX, C.mouseY);
-        ctx.stroke();
+        ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgba(0,255,200,0.4)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(C.arrowFrom.x, C.arrowFrom.y); ctx.lineTo(C.mouseX, C.mouseY); ctx.stroke();
         ctx.restore();
     }
-
-    // states
     C.states.forEach((s, i) => drawState(ctx, s, i === 0));
 }
 
 function drawState(ctx, s, isStart) {
     ctx.save();
-    // outer circle
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, 22, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, Math.PI * 2);
     ctx.fillStyle   = isStart ? 'rgba(0,255,200,0.15)' : 'rgba(167,139,250,0.12)';
     ctx.strokeStyle = isStart ? '#00ffc8' : (s.accept ? '#ff6b35' : '#a78bfa');
     ctx.lineWidth   = isStart || C.arrowFrom?.id === s.id ? 2.5 : 1.5;
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
-    // double ring for accept
     if (s.accept) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 17, 0, Math.PI * 2);
-        ctx.strokeStyle = '#ff6b35';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x, s.y, 17, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ff6b35'; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
-    // start arrow indicator
     if (isStart) {
-        ctx.beginPath();
-        ctx.moveTo(s.x - 40, s.y);
-        ctx.lineTo(s.x - 24, s.y);
-        ctx.strokeStyle = '#00ffc8'; ctx.lineWidth = 1.5;
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(s.x - 40, s.y); ctx.lineTo(s.x - 24, s.y);
+        ctx.strokeStyle = '#00ffc8'; ctx.lineWidth = 1.5; ctx.stroke();
         arrowHead(ctx, s.x - 24, s.y, 0);
     }
 
-    // label
     ctx.font = '600 11px "Fira Code", monospace';
-    ctx.fillStyle   = '#e8edf5';
-    ctx.textAlign   = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8edf5'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(s.label, s.x, s.y);
     ctx.restore();
 }
 
 function drawArrow(ctx, a) {
-    const from = C.states.find(s => s.id === a.from);
-    const to   = C.states.find(s => s.id === a.to);
+    const from = C.states.find(s => s.id === a.from), to = C.states.find(s => s.id === a.to);
     if (!from || !to) return;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1.5;
-    ctx.fillStyle   = 'rgba(255,255,255,0.45)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1.5; ctx.fillStyle = 'rgba(255,255,255,0.45)';
 
     if (from === to) {
-        // self-loop
-        ctx.beginPath();
-        ctx.arc(from.x, from.y - 22, 14, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.font = '500 10px "Fira Code", monospace';
-        ctx.fillStyle = '#00ffc8'; ctx.textAlign = 'center';
+        ctx.beginPath(); ctx.arc(from.x, from.y - 22, 14, 0, Math.PI * 2); ctx.stroke();
+        ctx.font = '500 10px "Fira Code", monospace'; ctx.fillStyle = '#00ffc8'; ctx.textAlign = 'center';
         ctx.fillText(a.label, from.x, from.y - 46);
         ctx.restore(); return;
     }
 
-    const dx = to.x - from.x, dy = to.y - from.y;
-    const len = Math.hypot(dx, dy);
+    const dx = to.x - from.x, dy = to.y - from.y, len = Math.hypot(dx, dy);
     const ux = dx / len, uy = dy / len;
+    const sx = from.x + ux * 24, sy = from.y + uy * 24, ex = to.x - ux * 24, ey = to.y - uy * 24;
 
-    const sx = from.x + ux * 24, sy = from.y + uy * 24;
-    const ex = to.x   - ux * 24, ey = to.y   - uy * 24;
-
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-
-    // slight curve
+    ctx.beginPath(); ctx.moveTo(sx, sy);
     const cx = (sx + ex) / 2 - uy * 20, cy = (sy + ey) / 2 + ux * 20;
-    ctx.quadraticCurveTo(cx, cy, ex, ey);
-    ctx.stroke();
+    ctx.quadraticCurveTo(cx, cy, ex, ey); ctx.stroke();
+    const angle = Math.atan2(ey - cy, ex - cx); arrowHead(ctx, ex, ey, angle);
 
-    // arrow head
-    const angle = Math.atan2(ey - cy, ex - cx);
-    arrowHead(ctx, ex, ey, angle);
-
-    // label
-    ctx.font = '500 10px "Fira Code", monospace';
-    ctx.fillStyle = '#00ffc8'; ctx.textAlign = 'center';
+    ctx.font = '500 10px "Fira Code", monospace'; ctx.fillStyle = '#00ffc8'; ctx.textAlign = 'center';
     ctx.fillText(a.label, (sx + cx) / 2 + (-uy * 6), (sy + cy) / 2 + (ux * 6) - 4);
-
     ctx.restore();
 }
 
 function arrowHead(ctx, x, y, angle) {
     const size = 8;
-    ctx.save();
-    ctx.translate(x, y); ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-size, -size / 2);
-    ctx.lineTo(-size,  size / 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-size, -size / 2); ctx.lineTo(-size, size / 2);
+    ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
-function clearCanvas() {
-    C.states = []; C.arrows = []; C.nextId = 0; C.arrowFrom = null;
-    drawCanvas();
-}
+function clearCanvas() { C.states = []; C.arrows = []; C.nextId = 0; C.arrowFrom = null; drawCanvas(); }
 
 function extractCanvasDFA() {
     if (!C.states.length) { alert('Draw some states first!'); return; }
-
     const startSt = C.states[0];
     const alpha   = [...new Set(C.arrows.map(a => a.label.split(',').map(s => s.trim())).flat())].filter(Boolean);
-
     const states   = C.states.map(s => s.label);
     const accept   = C.states.filter(s => s.accept).map(s => s.label);
     const transMap = {};
 
     states.forEach(st => transMap[st] = {});
     C.arrows.forEach(a => {
-        const from = C.states.find(s => s.id === a.from);
-        const to   = C.states.find(s => s.id === a.to);
+        const from = C.states.find(s => s.id === a.from), to = C.states.find(s => s.id === a.to);
         if (!from || !to) return;
         a.label.split(',').forEach(sym => {
             sym = sym.trim();
@@ -663,15 +643,12 @@ function extractCanvasDFA() {
     document.getElementById('accept').value   = accept.join(',');
 
     generateMatrixTable();
-
     setTimeout(() => {
         document.querySelectorAll('#matrix-body input').forEach(inp => {
-            const from = inp.getAttribute('data-from');
-            const sym  = inp.getAttribute('data-sym');
+            const from = inp.getAttribute('data-from'), sym = inp.getAttribute('data-sym');
             inp.value  = (transMap[from] && transMap[from][sym]) || '';
         });
     }, 60);
-
     switchTab('manual');
 }
 
@@ -696,7 +673,6 @@ function initialize() {
         if (next) transitions[state][sym] = next;
     });
 
-    // BFS reachability
     const reachable = new Set([start]);
     const queue = [start];
     while (queue.length) {
@@ -723,7 +699,6 @@ function initialize() {
     stepCount  = 0;
     isDone     = false;
 
-    // Reset UI
     document.getElementById('partition-log').innerHTML       = '';
     document.getElementById('network-graph').innerHTML       = '<div class="graph-placeholder"><p>Running…</p></div>';
     document.getElementById('minimized-table-container').innerHTML = '';
@@ -861,15 +836,11 @@ function logPartition(title, groups, final) {
     const log  = document.getElementById('partition-log');
     const div  = document.createElement('div');
     div.className = 'partition-step' + (final ? ' final' : '');
-    div.innerHTML = `<h4>${title}</h4>` +
-        groups.map(g => `<span class="group">{ ${g.join(', ')} }</span>`).join('');
+    div.innerHTML = `<h4>${title}</h4>` + groups.map(g => `<span class="group">{ ${g.join(', ')} }</span>`).join('');
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
 }
 
-// ══════════════════════════════════════════════
-// 9.  OUTPUT — GRAPH
-// ══════════════════════════════════════════════
 // ══════════════════════════════════════════════
 // 9.  OUTPUT — GRAPH
 // ══════════════════════════════════════════════
@@ -878,45 +849,20 @@ function drawGraph(finalP) {
     container.innerHTML = '';
 
     const options = {
-        // Disabled hierarchical layout: this allows for curvedCW edges 
-        // to properly separate bidirectional arrows and fix self-loops.
-        layout: {
-            hierarchical: false 
-        },
+        layout: { hierarchical: false },
         physics: {
             enabled: true,
-            barnesHut: {
-                gravitationalConstant: -3500,
-                centralGravity: 0.15,
-                springLength: 200,
-                springConstant: 0.04,
-                damping: 0.15
-            },
+            barnesHut: { gravitationalConstant: -3500, centralGravity: 0.15, springLength: 200, springConstant: 0.04, damping: 0.15 },
             stabilization: { enabled: true, iterations: 1000, fit: true }
         },
         edges: { 
-            smooth: { 
-                enabled: true,
-                type: 'curvedCW', // Separates A->B and B->A into a neat loop
-                roundness: 0.25 
-            },
+            smooth: { enabled: true, type: 'curvedCW', roundness: 0.25 },
             color: { color: '#6b7a96', highlight: '#00ffc8' }, 
-            font: { 
-                color: '#00ffc8', 
-                size: 14, 
-                face: 'Fira Code', 
-                align: 'top', // Prevents label from slicing directly through the line
-                background: '#0e1420', 
-                strokeWidth: 0 
-            },
+            font: { color: '#00ffc8', size: 14, face: 'Fira Code', align: 'top', background: '#0e1420', strokeWidth: 0 },
             arrows: { to: { enabled: true, scaleFactor: 1.1 } },
             width: 2,
             selfReferenceSize: 35, 
-            selfReference: { 
-                size: 35, 
-                angle: Math.PI / 4, // Angles the self-loop cleanly to the top-right
-                renderBehindTheNode: false 
-            }
+            selfReference: { size: 35, angle: Math.PI / 4, renderBehindTheNode: false }
         },
         nodes: { 
             font: { face: 'Fira Code', color: '#e8edf5' },
@@ -941,7 +887,6 @@ function drawGraph(finalP) {
                 <circle cx="${cx}" cy="${cx}" r="${r-7}" stroke="${stk}" stroke-width="1.5" fill="${bg}"/>
                 <text x="${cx}" y="${cx}" dominant-baseline="central" font-family="Fira Code" font-size="12" text-anchor="middle" fill="#e8edf5">${name}</text>
             </svg>`;
-            // Added `size: r` so the edges attach to the outer border, not the center
             return { id: i, label: undefined, shape: 'image', image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), size: r };
         }
 
@@ -973,9 +918,7 @@ function drawGraph(finalP) {
     });
 
     const network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, options);
-    network.once('stabilizationIterationsDone', () => {
-        network.fit({ animation: { duration: 600 } });
-    });
+    network.once('stabilizationIterationsDone', () => network.fit({ animation: { duration: 600 } }));
     network.on('zoom', p => {
         if (p.scale < 0.3) network.moveTo({ scale: 0.3 });
         if (p.scale > 3)   network.moveTo({ scale: 3 });
@@ -1030,27 +973,4 @@ function minimizeDFA() {
 
 function resetApp() {
     window.location.reload();
-}
-// ══════════════════════════════════════════════
-// 12. REGEX TOOLBAR INSERTER
-// ══════════════════════════════════════════════
-function insertRegex(char) {
-    const input = document.getElementById('regex-input');
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const text = input.value;
-    
-    // If it's the parenthesis button, insert () and put cursor inside
-    if (char === '()') {
-        input.value = text.slice(0, start) + '()' + text.slice(end);
-        input.setSelectionRange(start + 1, start + 1);
-    } 
-    // Otherwise, insert the character and move cursor after it
-    else {
-        input.value = text.slice(0, start) + char + text.slice(end);
-        input.setSelectionRange(start + char.length, start + char.length);
-    }
-    
-    // Return focus to the input box so they can keep typing seamlessly
-    input.focus();
 }
