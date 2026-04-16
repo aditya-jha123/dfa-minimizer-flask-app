@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
@@ -106,10 +106,10 @@
                     <div class="regex-toolbar">
                         <button type="button" class="syn-btn" onclick="insertRegex('·')" title="Concatenation">· <span class="syn-label">concat</span></button>
                         <button type="button" class="syn-btn" onclick="insertRegex('|')" title="Union">| <span class="syn-label">union</span></button>
-                        <button type="button" class="syn-btn" onclick="insertRegex('*')" title="Kleene Star">* <span class="syn-label">kleene</span></button>
-                        <button type="button" class="syn-btn" onclick="insertRegex('+')" title="One or more">+ <span class="syn-label">one+</span></button>
-                        <button type="button" class="syn-btn" onclick="insertRegex('?')" title="Optional">? <span class="syn-label">opt</span></button>
-                        <button type="button" class="syn-btn" onclick="insertRegex('^')" title="Repeat">^ <span class="syn-label">repeat</span></button>
+                        <button type="button" class="syn-btn" onclick="insertRegex('*')" title="Kleene Star">a<sup>*</sup> <span class="syn-label">kleene</span></button>
+                        <button type="button" class="syn-btn" onclick="insertRegex('+')" title="One or more">a<sup>+</sup> <span class="syn-label">one+</span></button>
+                        <button type="button" class="syn-btn" onclick="insertRegex('?')" title="Optional">a<sup>?</sup> <span class="syn-label">opt</span></button>
+                        <button type="button" class="syn-btn" onclick="insertRegex('^')" title="Repeat">a<sup>n</sup> <span class="syn-label">repeat</span></button>
                         <button type="button" class="syn-btn" onclick="insertRegex('()')" title="Group">( ) <span class="syn-label">group</span></button>
                     </div>
                 </div>
