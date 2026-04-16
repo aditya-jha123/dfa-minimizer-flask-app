@@ -418,8 +418,6 @@ body {
 /* ── VIZ PANEL ── */
 .panel-viz { display: flex; flex-direction: column; gap: 20px; }
 
-.viz-section { }
-
 .viz-heading {
     display: flex; align-items: center; gap: 10px;
     font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em;
@@ -647,4 +645,12 @@ body {
 
 .syn-btn:hover .syn-label {
     color: var(--text);
+}
+/* Styling for superscript operators in the regex toolbar */
+.syn-btn sup {
+    font-size: 0.75rem;
+    line-height: 0;
+    vertical-align: super;
+    color: var(--cyan);
+    margin-left: 1px;
 }
